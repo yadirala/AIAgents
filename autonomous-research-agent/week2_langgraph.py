@@ -4,10 +4,12 @@ import os
 from dotenv import load_dotenv
 from tavily import TavilyClient
 from langgraph.graph import StateGraph
+from langsmith import traceable
+from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-# print(os.getenv("TAVILY_API_KEY"))
+tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
 class ResearchState(TypedDict):
     question: str
@@ -15,7 +17,8 @@ class ResearchState(TypedDict):
     search_results: List[str]
     summary: str
     final_report: str
-
+    
+@traceable
 def orchestrator(state: ResearchState) -> dict:
     question = state["question"]
     messages = [{"role": "system", "content": "You are a helpful research assistant. Be concise."},
@@ -26,21 +29,20 @@ def orchestrator(state: ResearchState) -> dict:
     queries = [q.strip() for q in final_response.choices[0].message.content.strip().split("\n") if q.strip()]
     return {"search_queries": queries}
 
+def search_one(query):
+    result = tavily.search(query=query, max_results=3)
+    return [r["content"] for r in result["results"]]
 
-
-
+@traceable
 def search_agent(state: ResearchState) -> dict:
-    tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
     queries = state["search_queries"]
-    final_results = []
-    for query in queries:
-        result = tavily.search(query=query, max_results=3)
-        for r in result["results"]:
-            final_results.append(r["content"])
+    with ThreadPoolExecutor() as executor:
+        all_results = list(executor.map(search_one, queries))
+    final_results = [item for sublist in all_results for item in sublist]
     return {"search_results": final_results}
 
 
-
+@traceable
 def analyst_agent(state: ResearchState) -> dict:
     context = "\n".join(state["search_results"])
     messages = [{"role": "system", "content": "You are a helpful research assistant. Be concise."},
@@ -50,6 +52,7 @@ def analyst_agent(state: ResearchState) -> dict:
         messages=messages)
     return {"summary": final_summary.choices[0].message.content}
 
+@traceable
 def writer_agent(state: ResearchState) -> dict:
     
     question = state["question"]

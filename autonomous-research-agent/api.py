@@ -1,5 +1,9 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
 from week2_langgraph import app as reserach_app
 
 app = FastAPI()
