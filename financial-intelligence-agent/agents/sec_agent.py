@@ -3,22 +3,21 @@ from gateway.llm_gateway import call_llm
 from agents.financialstate import FinancialState
 import json
 
-def sec_agent(state: FinancialState) -> dict:
-    # 1. get company and question from state
-    # 2. get CIK
-    # 3. fetch filing
-    # 4. build/load index
-    # 5. send index + question to LLM to extract relevant info
-    # 6. return {"sec_summary": answer}
+def sec_agent(state):
     company = state["company"]
     question = state["question"]
-    completed = state.get("completed_agents", [])   
     cik = get_cik(company)
     filing_content = fetch_sec_filing(cik)
     index = build_index(filing_content, company)
+    
+    # build context using summaries for routing + content for depth
+    context = ""
+    for section_name, data in index.items():
+        context += f"\n\n{section_name.upper()}:\n{data['summary']}\n\nDetailed content:\n{data['content'][:2000]}"
+    
     answer = call_llm([
-        {"role": "system", "content": "You are a financial analyst. Use the following indexed information from the company's 10-K filing to answer the question. Be concise and focus on relevant sections."},
-        {"role": "user", "content": f"Index: {json.dumps(index)}\n\nQuestion: {question}"}
+        {"role": "system", "content": "You are a financial analyst. Use the SEC filing sections to answer the question accurately."},
+        {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"}
     ])
-    completed = list(set(state.get("completed_agents", []) + ["sec_agent"]))
-    return {"sec_summary": answer, "completed_agents": completed}
+    
+    return {"sec_summary": answer}
