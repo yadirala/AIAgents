@@ -34,21 +34,21 @@ graph.add_edge("report_writer", END)
 app = graph.compile()
 
 
-if __name__ == "__main__":
-    from dotenv import load_dotenv
-    load_dotenv()
+# if __name__ == "__main__":
+#     from dotenv import load_dotenv
+#     load_dotenv()
     
-    print("Starting invoke...")
+#     print("Starting invoke...")
     
-    result = app.invoke({
-        "company": "AAPL",
-        "question": "What is the latest news about Apple?",
-        "news_summary": "",
-        "sec_summary": "",
-        "sentiment": "",
-        "risk_score": "",
-        "final_report": ""
-    })
+#     result = app.invoke({
+#         "company": "AAPL",
+#         "question": "What is the latest news about Apple?",
+#         "news_summary": "",
+#         "sec_summary": "",
+#         "sentiment": "",
+#         "risk_score": "",
+#         "final_report": ""
+#     })
     
-    print("Invoke complete")
-    print("Full result:", result)
+#     print("Invoke complete")
+#     print("Full result:", result)
