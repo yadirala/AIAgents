@@ -6,10 +6,13 @@ from agents.sec_agent import sec_agent
 from agents.sentiment_agent import sentiment_agent
 from agents.risk_scorer import risk_scorer
 from agents.report_writer import report_writer
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.sqlite import SqliteSaver
+import sqlite3
+
+conn = sqlite3.connect("checkpoints.db", check_same_thread=False)
+checkpointer = SqliteSaver(conn)
 
 graph = StateGraph(FinancialState)
-checkpointer = MemorySaver()
 
 # add all nodes
 graph.add_node("orchestrator", orchestrator)
