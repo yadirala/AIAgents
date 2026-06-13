@@ -1,6 +1,8 @@
 from gateway.llm_gateway import call_llm
 from agents.financialstate import FinancialState
 from tavily import TavilyClient
+from metrics.tracker import track_agent
+
 import os
 
 def news_fetcher(state: FinancialState) -> FinancialState:
@@ -12,7 +14,7 @@ def news_fetcher(state: FinancialState) -> FinancialState:
     result = tavily_client.search(query=f"latest news {company}", max_results=5)
     news_data = "\n".join([r["content"] for r in result["results"]])
 
-    news_summary = call_llm([
+    news_summary = track_agent("news_fetcher", [
         {"role": "system", "content": "You are a financial analyst. Summarize the following news articles related to the company."},
         {"role": "user", "content": f"News articles: {news_data}"}
     ])

@@ -2,6 +2,7 @@ from rag.sec_rag import get_cik, fetch_sec_filing, build_index
 from gateway.llm_gateway import call_llm
 from agents.financialstate import FinancialState
 import json
+from metrics.tracker import track_agent
 
 def sec_agent(state):
     company = state["company"]
@@ -15,7 +16,7 @@ def sec_agent(state):
     for section_name, data in index.items():
         context += f"\n\n{section_name.upper()}:\n{data['summary']}\n\nDetailed content:\n{data['content'][:2000]}"
     
-    answer = call_llm([
+    answer = track_agent("sec_agent", [
         {"role": "system", "content": "You are a financial analyst. Use the SEC filing sections to answer the question accurately."},
         {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"}
     ])

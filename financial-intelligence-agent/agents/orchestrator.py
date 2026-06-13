@@ -2,6 +2,7 @@ import json
 import re
 from langgraph.types import Send
 from gateway.llm_gateway import call_llm
+from metrics.tracker import track_agent
 
 def orchestrator(state):
     company = state["company"]
@@ -22,7 +23,7 @@ Available agents:
 Return a JSON list of agent names to run. Example: ["news_fetcher"] or ["news_fetcher", "sec_agent"]
 Return ONLY the JSON list, no other text."""
     
-    response = call_llm([
+    response = track_agent("orchestrator", [
         {"role": "system", "content": "You are an orchestrator. Return ONLY a valid JSON list of agent names."},
         {"role": "user", "content": prompt}
     ])

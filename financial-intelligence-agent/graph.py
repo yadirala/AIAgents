@@ -32,3 +32,24 @@ graph.add_edge("risk_scorer", "report_writer")
 graph.add_edge("report_writer", END)
 
 app = graph.compile()
+
+
+if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    result = app.invoke({
+        "company": "AAPL",
+        "question": "What is Apple's investment risk for 2025?",
+        "news_summary": "",
+        "sec_summary": "",
+        "sentiment": "",
+        "risk_score": "",
+        "final_report": ""
+    })
+    
+    print("Final Report:", result["final_report"][:200])
+    
+    from metrics.tracker import print_metrics
+    print("\n--- Agent Metrics ---")
+    print_metrics()

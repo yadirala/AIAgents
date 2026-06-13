@@ -1,6 +1,7 @@
 
 
 from gateway.llm_gateway import call_llm
+from metrics.tracker import track_agent
 
 
 def report_writer(state):
@@ -13,7 +14,7 @@ def report_writer(state):
     completed_agents = state.get("completed_agents", [])
     report_input = f"Company: {company}\n\nQuestion: {question}\n\nNews Summary: {news_summary}\n\nSEC Summary: {sec_summary}\n\nSentiment: {sentiment}\n\nRisk Score: {risk_score}\n\nWrite a structured investment research report based on the above information. Include sections like Executive Summary, News Analysis, SEC Filing Analysis, Sentiment Assessment, Risk Score, and Recommendation."
     
-    final_report = call_llm([
+    final_report = track_agent("report_writer", [
         {"role": "system", "content": "You are a financial analyst. Write a comprehensive investment research report based on the provided information. Be concise and focus on key insights."},
         {"role": "user", "content": report_input}
     ])
