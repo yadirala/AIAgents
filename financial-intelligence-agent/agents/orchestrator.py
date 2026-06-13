@@ -1,5 +1,6 @@
 import json
 import re
+from langgraph.types import Send
 from gateway.llm_gateway import call_llm
 
 def orchestrator(state):
@@ -7,23 +8,25 @@ def orchestrator(state):
     question = state["question"]
     
     agent_descriptions = {
-        "news_fetcher": "Fetches and summarizes the latest news articles about the company.",
-        "sec_agent": "Analyzes the company's SEC filings to extract relevant information.",
-        "sentiment_agent": "Determines the overall sentiment towards the company based on news and SEC analysis.",
-        "risk_scorer": "Assigns a risk score to the company based on all available information.",
-        "report_writer": "Writes a final report summarizing the analysis and answering the user's question."
+        "news_fetcher": "Fetches latest news. Use when question involves current events, recent news, or market sentiment.",
+        "sec_agent": "Analyzes SEC 10-K filing. Use when question involves risk factors, financial data, or regulatory issues."
     }
     
     agent_list_str = "\n".join([f"{name}: {desc}" for name, desc in agent_descriptions.items()])
     
-    prompt = f"You are an orchestrator for financial analysis. The user has asked: '{question}' about {company}. Based on the following available agents:\n\n{agent_list_str}\n\nWhich agents should be run to answer the user's question? Return a JSON list of agent names that should be executed in order."
+    prompt = f"""The user asked: '{question}' about {company}.
+
+Available agents:
+{agent_list_str}
+
+Return a JSON list of agent names to run. Example: ["news_fetcher"] or ["news_fetcher", "sec_agent"]
+Return ONLY the JSON list, no other text."""
     
     response = call_llm([
-        {"role": "system", "content": "You are an orchestrator that decides which agents to run based on the user's question and available agents."},
+        {"role": "system", "content": "You are an orchestrator. Return ONLY a valid JSON list of agent names."},
         {"role": "user", "content": prompt}
     ])
     
-    # Parse response as JSON list
     try:
         agents_to_run = json.loads(response)
     except json.JSONDecodeError:
@@ -31,6 +34,6 @@ def orchestrator(state):
         if match:
             agents_to_run = json.loads(match.group())
         else:
-            agents_to_run = ["news_fetcher", "sec_agent", "sentiment_agent", "risk_scorer", "report_writer"]
+            agents_to_run = ["news_fetcher", "sec_agent"]
     
-    return {"agents_to_run": agents_to_run}
+    return [Send(agent, state) for agent in agents_to_run]
